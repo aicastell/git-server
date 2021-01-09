@@ -1,0 +1,6 @@
+#!/bin/sh
+echo "Hi $USER!"
+echo "You've successfully authenticated to git-server"
+echo "But I do not provide interactive shell access."
+exit 128
+
