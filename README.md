@@ -31,7 +31,11 @@ In the server running docker you have to:
 
     6) Run the container:
 
-        $ docker run -d -ti --name <container-name> -p 2222:22 -v /home/<username>/git-server/repos/:/git-server/repos -v /home/<username>/git-server/keys/:/git-server/keys alpine:git-server
+        $ docker run -d -ti --name <container-name> \
+            -p 2222:22 \
+            -v /home/<username>/git-server/repos/:/git-server/repos \
+            -v /home/<username>/git-server/keys/:/git-server/keys \
+            alpine:git-server
 
     where:
 
