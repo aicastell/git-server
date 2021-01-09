@@ -1,3 +1,17 @@
+
+
+Clone the repo:
+
+    $ cd /home/<username>
+    $ git clone https://github.com/aicastell/git-server.git
+
+
+Create directories keys and repos
+
+    $ cd git-server
+    $ mkdir -p keys repos
+    
+
 Edit Dockerfile and set PASSWORD:
 
     PASSWORD=supersecret
@@ -10,17 +24,17 @@ Build the docker image:
 
 Copy your public key:
 
-    $ cp key.pub /home/<username>/git/keys/
+    $ cp /path/to/key.pub /home/<username>/git-server/keys/
 
 
 Run the container:
 
-    $ docker run -d -ti --name <container-name> -p 2222:22 -v /home/<username>/git/repos/:/git-server/repos -v /home/<username>/git/keys/:/git-server/keys alpine:git-server
+    $ docker run -d -ti --name <container-name> -p 2222:22 -v /home/<username>/git-server/repos/:/git-server/repos -v /home/<username>/git-server/keys/:/git-server/keys alpine:git-server
 
 where:
 
-    - /git-server/repos is a volume to store repositories
-    - /git-server/keys is a volume to store the user public keys
+    - /home/<username>/git-server/repos is a volume to store repositories
+    - /home/<username>/git-server/keys is a volume to store the user public keys
 
 
 After any change:
@@ -35,7 +49,7 @@ Test it works:
 
 Create a new repo (in server-running-docker):
 
-    cd /home/<username>/git/repos/
+    cd /home/<username>/git-server/repos/
     mkdir -p <repo-name>
     cd <repo-name>
     git --bare init
