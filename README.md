@@ -1,3 +1,17 @@
+
+
+Clone the repo:
+
+    $ cd /home/<username>
+    $ git clone https://github.com/aicastell/git-server.git
+
+
+Create directories keys and repos
+
+    $ cd git-server
+    $ mkdir -p keys repos
+    
+
 Edit Dockerfile and set PASSWORD:
 
     PASSWORD=supersecret
@@ -10,7 +24,7 @@ Build the docker image:
 
 Copy your public key:
 
-    $ cp key.pub /home/<username>/git-server/keys/
+    $ cp /path/to/key.pub /home/<username>/git-server/keys/
 
 
 Run the container:
@@ -19,8 +33,8 @@ Run the container:
 
 where:
 
-    - /git-server/repos is a volume to store repositories
-    - /git-server/keys is a volume to store the user public keys
+    - /home/<username>/git-server/repos is a volume to store repositories
+    - /home/<username>/git-server/keys is a volume to store the user public keys
 
 
 After any change:
@@ -58,7 +72,5 @@ Stop the container:
 
     $ docker stop <container-name>
     $ docker rm -f <container-name>
-
-
 
 
