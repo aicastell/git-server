@@ -1,88 +1,99 @@
 
 
-Clone the repo:
+In the server running docker you have to:
 
-    $ cd /home/<username>
-    $ git clone https://github.com/aicastell/git-server.git
+    1) Clone this repo:
 
-
-Create directories keys and repos
-
-    $ cd git-server
-    $ mkdir -p keys repos
-    
-
-Edit Dockerfile and set PASSWORD:
-
-    PASSWORD=supersecret
+        $ cd /home/<username>
+        $ git clone https://github.com/aicastell/git-server.git
 
 
-Build the docker image:
+    2) Create directories keys and repos
 
-    $ docker build -t alpine:git-server -f Dockerfile .
+        $ cd git-server
+        $ mkdir -p keys repos
+        
 
+    3) Edit Dockerfile and set PASSWORD:
 
-Copy your public key:
-
-    $ cp /path/to/key.pub /home/<username>/git-server/keys/
-
-
-Run the container:
-
-    $ docker run -d -ti --name <container-name> -p 2222:22 -v /home/<username>/git-server/repos/:/git-server/repos -v /home/<username>/git-server/keys/:/git-server/keys alpine:git-server
-
-where:
-
-    - /home/<username>/git-server/repos is a volume to store repositories
-    - /home/<username>/git-server/keys is a volume to store the user public keys
+        PASSWORD=supersecret
 
 
-After any change:
+    4) Build the docker image:
 
-    $ docker restart <container-name>
-
-
-Test it works:
-
-    $ ssh git@<server-running-docker> -p 2222
+        $ docker build -t alpine:git-server -f Dockerfile .
 
 
-Create a new repo (in server-running-docker):
+    5) Copy your public key:
 
-    cd /home/<username>/git-server/repos/
-    mkdir -p <repo-name>
-    cd <repo-name>
-    git --bare init
+        $ cp /path/to/key.pub /home/<username>/git-server/keys/
 
 
+    6) Run the container:
 
-Setup connections to remote server vía 2222 port:
+        $ docker run -d -ti --name <container-name> -p 2222:22 -v /home/<username>/git-server/repos/:/git-server/repos -v /home/<username>/git-server/keys/:/git-server/keys alpine:git-server
 
-    $ cat /etc/hosts
-    192.168.1.xx 	<server-running-docker>
+    where:
 
-    $ cat ~/.ssh/config
-    Host <server-running-docker>
-        Port 2222
-
-    
-
-Pull an existing repo (in your local PC):
-
-    $ cd <repo-name>
-    $ git remote add <remote-name> git@<server-running-docker>:/git-server/repos/<repo-name>
-    $ git push <remote-name> <remote-branch>
+        - /home/<username>/git-server/repos is a volume to store repositories
+        - /home/<username>/git-server/keys is a volume to store the user public keys
 
 
-Clone repo:
+    7) Every time you need to create a new repo, you have to do this:
 
-    $ git clone git@<server-running-docker>:/git-server/repos/<repo-name>
+        $ cd /home/<username>/git-server/repos/
+        $ mkdir -p <repo-name>
+        $ cd <repo-name>
+        $ git --bare init
+
+    An then:
+
+        $ docker restart <container-name>
+
+
+    8) If you need to stop the container:
+
+        $ docker stop <container-name>
+        $ docker rm -f <container-name>
 
 
 
-Stop the container:
 
-    $ docker stop <container-name>
-    $ docker rm -f <container-name>
+
+In your local PC you have to:
+
+    1) Test it docker server is properly running:
+
+        $ ssh git@<server-running-docker> -p 2222
+
+
+
+    2) Setup server name and IP:
+
+        $ cat /etc/hosts
+        192.168.1.xx 	<server-running-docker>
+
+
+
+    3) Setup connections to remote server vía 2222 port:
+
+        $ cat ~/.ssh/config
+        Host <server-running-docker>
+            Port 2222
+
+        
+    4) Push an existing git repository to your dockerized server:
+
+        $ cd <repo-name>
+        $ git remote add <remote-name> git@<server-running-docker>:/git-server/repos/<repo-name>
+        $ git push <remote-name> <remote-branch>
+
+
+    5) Clone remote repo into local directory:
+
+        $ git clone git@<server-running-docker>:/git-server/repos/<repo-name>
+
+
+Hope this helps! :)
 
 
