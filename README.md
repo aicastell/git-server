@@ -10,12 +10,12 @@ Build the docker image:
 
 Copy your public key:
 
-    $ cp key.pub /home/<username>/git/keys/
+    $ cp key.pub /home/<username>/git-server/keys/
 
 
 Run the container:
 
-    $ docker run -d -ti --name <container-name> -p 2222:22 -v /home/<username>/git/repos/:/git-server/repos -v /home/<username>/git/keys/:/git-server/keys alpine:git-server
+    $ docker run -d -ti --name <container-name> -p 2222:22 -v /home/<username>/git-server/repos/:/git-server/repos -v /home/<username>/git-server/keys/:/git-server/keys alpine:git-server
 
 where:
 
@@ -35,7 +35,7 @@ Test it works:
 
 Create a new repo:
 
-    cd /home/<username>/git/repos/
+    cd /home/<username>/git-server/repos/
     mkdir -p <repo-name>
     cd <repo-name>
     git --bare init
