@@ -33,7 +33,7 @@ Test it works:
     $ ssh git@<server-running-docker> -p 2222
 
 
-Create a new repo:
+Create a new repo (in server-running-docker):
 
     cd /home/<username>/git/repos/
     mkdir -p <repo-name>
@@ -41,7 +41,19 @@ Create a new repo:
     git --bare init
 
 
-Pull an existing repo:
+
+Setup connections to remote server vía 2222 port:
+
+    $ cat /etc/hosts
+    192.168.1.xx 	<server-running-docker>
+
+    $ cat ~/.ssh/config
+    Host <server-running-docker>
+        Port 2222
+
+    
+
+Pull an existing repo (in your local PC):
 
     $ cd <repo-name>
     $ git remote add <remote-name> git@<server-running-docker>:/git-server/repos/<repo-name>
@@ -58,7 +70,5 @@ Stop the container:
 
     $ docker stop <container-name>
     $ docker rm -f <container-name>
-
-
 
 
