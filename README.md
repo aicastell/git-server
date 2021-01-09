@@ -1,3 +1,7 @@
+Edit Dockerfile and set PASSWORD:
+
+    PASSWORD=supersecret
+
 
 Build the docker image:
 
@@ -11,7 +15,7 @@ Copy your public key:
 
 Run the container:
 
-    $ docker run -d -ti --name git -p 2222:22 -v /home/<username>/git/repos/:/git-server/repos -v /home/<username>/git/keys/:/git-server/keys alpine:git-server
+    $ docker run -d -ti --name <container-name> -p 2222:22 -v /home/<username>/git/repos/:/git-server/repos -v /home/<username>/git/keys/:/git-server/keys alpine:git-server
 
 where:
 
@@ -52,8 +56,8 @@ Clone repo:
 
 Stop the container:
 
-    $ docker stop git
-    $ docker rm -f git
+    $ docker stop <container-name>
+    $ docker rm -f <container-name>
 
 
 

@@ -5,22 +5,21 @@ MAINTAINER Angel Ivan Castell Rovira <al004140@gmail.com>
 RUN apk add --no-cache \
     openssh \
     git
-
 RUN ssh-keygen -A
 
-WORKDIR /git-server/
+ENV USERNAME=git
+ENV PASSWORD=
 
-RUN mkdir /git-server/keys \
-    && adduser -D -s /usr/bin/git-shell git \
-    && echo git:12345 | chpasswd \
-    && mkdir /home/git/.ssh
+RUN mkdir -p /git-server/keys /git-server/repos \
+    && adduser -D -s /usr/bin/git-shell ${USERNAME} \
+    && echo ${USERNAME}:${PASSWORD} | chpasswd \
+    && mkdir -p /home/${USERNAME}/.ssh/
 
 # https://git-scm.com/docs/git-shell
-COPY git-shell-commands /home/git/git-shell-commands
-
-COPY sshd_config /etc/ssh/sshd_config
+COPY git-shell-commands /home/${USERNAME}/git-shell-commands
 COPY start.sh start.sh
 
 EXPOSE 22
 
 CMD ["sh", "start.sh"]
+
