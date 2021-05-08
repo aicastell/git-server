@@ -1,4 +1,11 @@
+This document explains:
 
+    1. Steps to configure the server running docker
+    2. Steps to configure git client
+    3. All in one step
+
+
+1. Steps to configure the server running docker:
 
 In the server running docker you have to:
 
@@ -62,11 +69,11 @@ In the server running docker you have to:
 
 
 
-
+2. Steps to configure git client
 
 In your local PC you have to:
 
-    1) Test it docker server is properly running:
+    1) Check if docker server is properly running:
 
         $ ssh git@<server-running-docker> -p 2222
 
@@ -96,6 +103,34 @@ In your local PC you have to:
     5) Clone remote repo into local directory:
 
         $ git clone git@<server-running-docker>:/git-server/repos/<repo-name>
+
+
+
+3. All in one
+
+You can do all steps easily using docker-compose:
+
+    1) Install docker-compose:
+
+        $ sudo curl -L "https://github.com/docker/compose/releases/download/1.29.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
+
+    2) Edit docker-compose.yml and set the <USER> properly
+
+
+    3) Build the image:
+
+        $ docker-compose build
+
+
+    4) Start the container:
+
+        $ docker-compose up -d
+
+
+    5) Stop the container:
+
+        $ docker-compose down
 
 
 Hope this helps! :)
