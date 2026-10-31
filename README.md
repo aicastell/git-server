@@ -112,6 +112,8 @@ git clone my-git-server:/git-server/repos/example.git
 
 ### Push an existing local repository
 
+If you cloned an empty repository and your local branch is named `master`, rename it to `main` before the first push using `git branch -m main`. This is only necessary when the local branch name differs from the intended remote branch.
+
 ```sh
 cd /path/to/local/repository
 git remote add selfhosted ssh://git@HOSTNAME:2222/git-server/repos/example.git
