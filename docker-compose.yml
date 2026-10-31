@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     image: alpine:git-server
     container_name: git-server
-    restart: unless-stopped
+    restart: always
 
     ports:
       - "${GIT_BIND_ADDRESS:-127.0.0.1}:${GIT_SSH_PORT:-2222}:22"
