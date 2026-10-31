@@ -1,21 +1,67 @@
 #!/bin/sh
+set -eu
 
-if [ -d /git-server/keys/ ]; then
-    cat /git-server/keys/*.pub > /home/${USERNAME}/.ssh/authorized_keys
-fi
+GIT_HOME="/home/git"
+KEYS_DIR="/git-server/keys"
+REPOS_DIR="/git-server/repos"
+HOST_KEYS_DIR="/git-server/ssh-host-keys"
 
-if [ -d /home/${USERNAME}/.ssh ]; then
-    chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/.ssh
-    chmod 700 /home/${USERNAME}/.ssh
-    chmod -R 600 /home/${USERNAME}/.ssh/*
-fi
+# Initialize persistent SSH host keys.
+mkdir -p "$HOST_KEYS_DIR" /run/sshd
 
-if [ -d /git-server/repos/ ]; then
-    chown -R ${USERNAME}:${USERNAME} /git-server/repos/
-    chmod -R ug+rwX /git-server/repos/
-    find /git-server/repos -type d -exec chmod g+s '{}' +
-fi
+for type in ed25519 rsa; do
+    key="$HOST_KEYS_DIR/ssh_host_${type}_key"
 
-# -D flag avoids executing sshd as a daemon
-/usr/sbin/sshd -D
+    if [ ! -f "$key" ]; then
+        ssh-keygen -q -t "$type" -N '' -f "$key"
+    fi
 
+    chmod 600 "$key"
+    chmod 644 "${key}.pub"
+done
+
+# Prepare Git user SSH configuration.
+mkdir -p "$GIT_HOME/.ssh"
+chmod 700 "$GIT_HOME/.ssh"
+
+: > "$GIT_HOME/.ssh/authorized_keys"
+
+for key in "$KEYS_DIR"/*.pub; do
+    [ -f "$key" ] || continue
+    cat "$key" >> "$GIT_HOME/.ssh/authorized_keys"
+    printf '\n' >> "$GIT_HOME/.ssh/authorized_keys"
+done
+
+chown -R git:git "$GIT_HOME/.ssh"
+chmod 600 "$GIT_HOME/.ssh/authorized_keys"
+
+# Configure SSH access.
+cat > /etc/ssh/sshd_config <<EOF
+Port 22
+HostKey $HOST_KEYS_DIR/ssh_host_ed25519_key
+HostKey $HOST_KEYS_DIR/ssh_host_rsa_key
+
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PubkeyAuthentication yes
+AuthenticationMethods publickey
+AuthorizedKeysFile .ssh/authorized_keys
+
+AllowUsers git
+AllowTcpForwarding no
+AllowAgentForwarding no
+X11Forwarding no
+PermitTunnel no
+PermitTTY no
+GatewayPorts no
+PermitUserEnvironment no
+EOF
+
+chmod 700 "$HOST_KEYS_DIR"
+
+# Check configuration before starting SSH.
+sshd -t
+
+# Keep SSH running as the container's main process.
+exec /usr/sbin/sshd -D -e

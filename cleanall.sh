@@ -1,4 +1,7 @@
-#! /bin/sh
+#!/bin/sh
+set -eu
 
-docker rm -f $(docker ps -qa)
-docker rmi alpine:git-server
+cd "$(dirname "$0")"
+
+docker compose down
+docker image rm alpine:git-server

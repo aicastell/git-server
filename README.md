@@ -1,138 +1,170 @@
-This document explains:
+# git-server
 
-    1. Steps to configure the server running docker
-    2. Steps to configure git client
-    3. All in one step
+A minimal, self-hosted Git server using **Alpine Linux**, **OpenSSH**, and **Git** in a Docker container.
 
+Git repositories are accessed over SSH using public-key authentication. There is no web interface, database, or interactive shell.
 
-1. Steps to configure the server running docker:
+## Requirements
 
-In the server running docker you have to:
+- Docker Engine with the Docker Compose v2 plugin (`docker compose`)
+- An SSH key pair on each client
+- A free TCP port on the host (default: `2222`)
 
-    1) Clone this repo:
+## Quick start
 
-        $ cd /home/<username>
-        $ git clone https://github.com/aicastell/git-server.git
+### 1. Clone the project
 
+```sh
+git clone https://github.com/aicastell/git-server.git
+cd git-server
+```
 
-    2) Create directories keys and repos
+### 2. Prepare persistent directories
 
-        $ cd git-server
-        $ mkdir -p keys repos
-        
+The container runs Git as UID/GID **10001:10001**. Create the directories before starting Docker so that bind-mount ownership is predictable:
 
-    3) Edit Dockerfile and set PASSWORD:
+```sh
+mkdir -p data/keys data/repos data/ssh-host-keys
+sudo chown 10001:10001 data/repos
+chmod 755 data/keys data/repos
+```
 
-        PASSWORD=supersecret
+Keep `data/ssh-host-keys` writable by the container's root user. It contains the **server's private SSH host keys** and must be protected and backed up.
 
+> If you set `GIT_DATA_DIR`, create these directories under that path instead of `./data`.
 
-    4) Build the docker image:
+### 3. Authorize a client public key
 
-        $ docker build -t alpine:git-server -f Dockerfile .
+Copy **only the public key** (`.pub`) to the `keys` directory:
 
+```sh
+cp /path/to/client-key.pub data/keys/client.pub
+```
 
-    5) Copy your public key:
+Never copy a client's private key into the project, Docker image, or container. Public keys are loaded into `authorized_keys` when the container starts; restart the service after adding or removing them.
 
-        $ cp /path/to/key.pub /home/<username>/git-server/keys/
+### 4. Start the server
 
+```sh
+docker compose up -d --build
+```
 
-    6) Run the container:
+By default, SSH is exposed only on the host's loopback address, `127.0.0.1:2222`. To accept connections from other computers, set a reachable bind address, for example:
 
-        $ docker run -d -ti --name <container-name> \
-            -p 2222:22 \
-            -v /home/<username>/git-server/repos/:/git-server/repos \
-            -v /home/<username>/git-server/keys/:/git-server/keys \
-            alpine:git-server
+```sh
+GIT_BIND_ADDRESS=0.0.0.0 docker compose up -d
+```
 
-    where:
+Only expose the port on trusted networks, and use host firewall rules as appropriate. To customize the host port, set `GIT_SSH_PORT` (default: `2222`). To store persistent data elsewhere, set `GIT_DATA_DIR` (default: `./data`). Put persistent deployment settings in a local `.env` file if desired; **do not commit `.env`**.
 
-        - /home/<username>/git-server/repos is a volume to store repositories
-        - /home/<username>/git-server/keys is a volume to store the user public keys
+### 5. Verify SSH authentication
 
+From an authorized client, using the appropriate host address:
 
-    7) Every time you need to create a new repo, you have to do this:
+```sh
+ssh -T -p 2222 -i /path/to/client-private-key git@localhost
+```
 
-        $ cd /home/<username>/git-server/repos/
-        $ mkdir -p <repo-name>
-        $ cd <repo-name>
-        $ git --bare init
+A successful connection prints a welcome message and refuses an interactive shell. The command intentionally exits with a nonzero status; that is expected. If the host is remote, replace `localhost` with its hostname or IP address.
 
-    An then:
+On first connection, verify the server's host-key fingerprint through a trusted channel before accepting it:
 
-        $ docker restart <container-name>
+```sh
+docker compose exec git ssh-keygen -lf /git-server/ssh-host-keys/ssh_host_ed25519_key.pub
+```
 
+## Manage repositories
 
-    8) If you need to stop the container:
+### Create a bare repository
 
-        $ docker stop <container-name>
-        $ docker rm -f <container-name>
+Run this on the Docker host, in the project directory:
 
+```sh
+docker compose exec -u git git git init --bare --initial-branch=main /git-server/repos/example.git
+```
 
+No container restart is needed. The `git` user must have write access to `data/repos` and its contents.
 
-2. Steps to configure git client
+### Clone a repository
 
-In your local PC you have to:
+From a client with SSH configured for the correct identity and port:
 
-    1) Check if docker server is properly running:
+```sh
+git clone ssh://git@HOSTNAME:2222/git-server/repos/example.git
+```
 
-        $ ssh git@<server-running-docker> -p 2222
+Replace `HOSTNAME` with the Docker host's reachable hostname or IP address. Alternatively, configure an SSH host alias in `~/.ssh/config`:
 
+```sshconfig
+Host my-git-server
+    HostName HOSTNAME
+    User git
+    Port 2222
+    IdentityFile /path/to/client-private-key
+    IdentitiesOnly yes
+```
 
+Then clone with:
 
-    2) Setup server name and IP:
+```sh
+git clone my-git-server:/git-server/repos/example.git
+```
 
-        $ cat /etc/hosts
-        192.168.1.xx 	<server-running-docker>
+### Push an existing local repository
 
+```sh
+cd /path/to/local/repository
+git remote add selfhosted ssh://git@HOSTNAME:2222/git-server/repos/example.git
+git push -u selfhosted main
+```
 
+Replace `main` with your local branch name if different.
 
-    3) Setup connections to remote server vía 2222 port:
+## Persistent data
 
-        $ cat ~/.ssh/config
-        Host <server-running-docker>
-            Port 2222
+The Compose configuration mounts three host directories:
 
-        
-    4) Push an existing git repository to your dockerized server:
+| Host path (relative to `GIT_DATA_DIR`) | Container path | Purpose |
+| --- | --- | --- |
+| `repos/` | `/git-server/repos` | Bare Git repositories |
+| `keys/` | `/git-server/keys` (read-only) | Authorized client public keys (`*.pub`) |
+| `ssh-host-keys/` | `/git-server/ssh-host-keys` | Persistent server SSH identity (private and public host keys) |
 
-        $ cd <repo-name>
-        $ git remote add <remote-name> git@<server-running-docker>:/git-server/repos/<repo-name>
-        $ git push <remote-name> <remote-branch>
+The server regenerates `authorized_keys` from `keys/*.pub` on startup. SSH host keys are generated on first start and retained in the persistent directory.
 
+**Back up** the repositories, authorized public keys, and SSH host keys. Keep backup copies of private host keys protected. A backup is not complete until you have tested restoration. For actively updated repositories, use a consistent backup method and verify repository integrity (for example, with `git fsck`).
 
-    5) Clone remote repo into local directory:
+## Operations
 
-        $ git clone git@<server-running-docker>:/git-server/repos/<repo-name>
+```sh
+# View status and logs
+docker compose ps
+docker compose logs --tail=50 git
 
+# Reload authorized public keys (restart the container)
+docker compose restart git
 
+# Stop and remove this project's container/network (preserves bind-mounted data)
+docker compose down
 
-3. All in one
+# Start or rebuild
+docker compose up -d --build
+```
 
-You can do all steps easily using docker-compose:
+The project also provides `runall.sh` (build/start) and `cleanall.sh` (stop/remove the project container and the local `alpine:git-server` image). **Do not use `cleanall.sh` to delete persistent data**; it does not remove bind-mounted directories.
 
-    1) Install docker-compose:
+## Security notes
 
-        $ sudo curl -L "https://github.com/docker/compose/releases/download/1.29.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+- SSH password and keyboard-interactive authentication are disabled. Only authorized public keys can authenticate.
+- The `git` account uses `git-shell` and cannot open an interactive shell.
+- SSH host keys persist independently of container rebuilds; protect the private host keys.
+- The Git account uses UID/GID `10001:10001`. Ensure repository ownership matches on the host.
+- The default SSH bind address is `127.0.0.1`. Remote access requires an explicit bind-address change and appropriate network controls.
+- Keep the Alpine base image and installed packages updated, and rebuild when security updates are available.
 
+## License
 
-    2) Edit docker-compose.yml and set the <USER> properly
+This project is licensed under the GNU General Public License
+version 2.0 only (GPL-2.0-only).
 
-
-    3) Build the image:
-
-        $ docker-compose build
-
-
-    4) Start the container:
-
-        $ docker-compose up -d
-
-
-    5) Stop the container:
-
-        $ docker-compose down
-
-
-Hope this helps! :)
-
-
+See the [LICENSE](LICENSE) file for the complete license text.

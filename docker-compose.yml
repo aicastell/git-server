@@ -1,15 +1,16 @@
-version: '3'
-
 services:
   git:
-    image: alpine:git-server
-    container_name: git
-    ports:
-      - "2222:22"
-    volumes:
-      - "/home/<USER>/git-server/repos/:/git-server/repos"
-      - "/home/<USER>/git-server/keys/:/git-server/keys"
     build:
-        context: .
-        dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile
+    image: alpine:git-server
+    container_name: git-server
+    restart: unless-stopped
 
+    ports:
+      - "${GIT_BIND_ADDRESS:-127.0.0.1}:${GIT_SSH_PORT:-2222}:22"
+
+    volumes:
+      - ${GIT_DATA_DIR:-./data}/repos:/git-server/repos
+      - ${GIT_DATA_DIR:-./data}/keys:/git-server/keys:ro
+      - ${GIT_DATA_DIR:-./data}/ssh-host-keys:/git-server/ssh-host-keys

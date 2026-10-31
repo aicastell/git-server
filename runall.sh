@@ -1,9 +1,6 @@
-#! /bin/sh
+#!/bin/sh
+set -eu
 
-docker build -t alpine:git-server -f Dockerfile .
-docker run -d -ti --name git -p 2222:22 -v /home/aicastell/git-server/repos/:/git-server/repos -v /home/aicastell/git-server/keys/:/git-server/keys alpine:git-server
+cd "$(dirname "$0")"
 
-# in case you need to enter into the container
-# docker exec -ti git sh
-
-
+docker compose up -d --build
